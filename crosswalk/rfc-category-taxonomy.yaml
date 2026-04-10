@@ -1,0 +1,379 @@
+# crosswalk/rfc-category-taxonomy.yaml
+#
+# Reverse crosswalk: vocabulary signal_types → A2A RFC trust evidence
+# category taxonomy. Promised to @AlexanderLawson17 on
+# A2A Discussion #1734 via @douglasborthwick-crypto's offer to draft.
+#
+# This file is structurally different from the per-system forward
+# crosswalks (insumerapi.yaml, satp/) that map ONE issuer's internal
+# names to the canonical vocabulary. This file maps the canonical
+# vocabulary OUT to a target taxonomy that is itself still being
+# drafted in an upstream A2A RFC.
+#
+# The mapping is intentionally early. The A2A RFC categories are
+# proposed names, not formalized values, and several rows below
+# require issuer review before they are accurate enough to merge.
+# Reviewers tagged inline; PR description repeats the list.
+
+crosswalk_type: rfc_category_reverse
+source_vocabulary: agent-governance-vocabulary/vocabulary.yaml
+source_vocabulary_version: "0.1.0"
+target_taxonomy: a2a-rfc-trust-evidence
+target_taxonomy_version: "draft (not yet formalized)"
+target_discussion: https://github.com/a2aproject/A2A/discussions/1734
+status: draft_v0.1_awaiting_rfc_v0.2_formalization
+
+# ─────────────────────────────────────────────────
+# MATCH TYPES (REVERSE CROSSWALK)
+# These four are scoped to the reverse-crosswalk direction. They are
+# narrower than the vocabulary.yaml > crosswalk_match_types set
+# because the reverse direction has different failure modes than the
+# system→vocab direction (no question of "different field names";
+# only of "does the target taxonomy contain a corresponding bucket").
+# ─────────────────────────────────────────────────
+match_types:
+  exact:
+    definition: "Vocabulary signal_type maps 1:1 to a single proposed RFC category. Same name expected once the RFC formalizes."
+  extends:
+    definition: "Vocabulary signal_type is a strict subtype of a broader RFC category (signal carries fields the parent category does not require)."
+  partial:
+    definition: "Vocabulary signal_type and the proposed RFC category overlap but neither contains the other. Specify dimensions of divergence in notes."
+  no_analog:
+    definition: "Proposed RFC category does not yet have a slot for this signal_type. Honest gap, surfaced for the RFC authors to consider."
+
+# ─────────────────────────────────────────────────
+# MAPPINGS — TEN ROWS, ONE PER MULTI-ATTESTATION-SPEC SIGNAL TYPE
+# Order matches MULTI-ATTESTATION-SPEC.md.
+# ─────────────────────────────────────────────────
+mappings:
+
+  # ───── 1 ─────────────────────────────────────────
+  # NEEDS REVIEW: @douglasborthwick-crypto for InsumerAPI field set
+  # NEEDS REVIEW: @AlexanderLawson17 for Revettr-future split scope
+  - signal_type: wallet_state
+    target_category: wallet_state            # proposed, name expected to mirror signal_type
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - InsumerAPI
+      - "Revettr (post-v0.2 split, see notes)"
+    signed_payload_fields:
+      - balance
+      - chains_covered
+      - block_numbers
+      - block_timestamps
+      - tx_count
+      - age
+      - counterparty_diversity
+    payload_fields_source: |
+      Abstracted to category-level fields. InsumerAPI's per-endpoint
+      payload shapes (attest_raw, attest_jwt, trust) are documented
+      in detail in crosswalk/insumerapi.yaml > signal_types.wallet_state
+      > signed_shapes. The fields above are the union the RFC
+      category should accommodate, not InsumerAPI's exact JWS claims.
+    notes: |
+      Foundation layer of the multi-attestation envelope. InsumerAPI
+      covers 33 chains today (30 EVM + Solana + XRPL + Bitcoin) and
+      stamps `type: "wallet_state"` directly. Revettr will emit a
+      dedicated wallet_state envelope post-v0.2 split, scoped to
+      on-chain state (balance, tx count, age, counterparty diversity)
+      without compliance-adjacent fields. Until that split ships, the
+      Revettr listing here is forward-looking — see compliance_risk
+      row 5 for Revettr's current production envelope.
+      [REVIEW: @douglasborthwick-crypto on the field set; this is the
+      InsumerAPI maintainer's call once the RFC formalizes a category.]
+      [REVIEW: @AlexanderLawson17 on whether the Revettr-future scope
+      is bounded the way this row asserts.]
+    needs_issuer_confirmation: true
+    revettr_split_status: "PROPOSED — pending v0.2 RFC formalization, not yet split in production"
+
+  # ───── 2 ─────────────────────────────────────────
+  - signal_type: behavioral_trust
+    target_category: behavioral_trust        # proposed
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - SATP
+      - "MolTrust (per vocabulary.yaml issuers_in_production)"
+      - "RNWY (per vocabulary.yaml issuers_in_production)"
+    signed_payload_fields:
+      - "trust_score.value (float 0..1)"
+      - "trust_score.sample_size"
+      - "trust_score.confidence"
+      - "trust_score.task_class"
+      - "derivation.inputs.window_end"
+    payload_fields_source: |
+      SATP fields lifted from crosswalk/satp/behavioral-trust.yaml
+      (in this repo). Other issuer payloads (MolTrust, RNWY) are
+      not yet documented as crosswalks here and may carry different
+      field names; the union is TBD pending their respective
+      crosswalk PRs.
+    notes: |
+      Per @douglasborthwick-crypto on vocabulary.yaml: canonical name
+      is `behavioral_trust`, NOT `behavioral_fingerprint`. Fingerprint
+      implies passive observation; trust implies scored assessment.
+      Distinct primitives; the RFC category should preserve the
+      distinction. Per OWASP PR #819 (referenced in the SATP
+      crosswalk): gates MUST evaluate task-class-scoped scores, not
+      cross-class aggregates. RFC category should require
+      `task_class` as a structural field, not an optional one.
+    needs_issuer_confirmation: true
+
+  # ───── 3 ─────────────────────────────────────────
+  - signal_type: wallet_intelligence
+    target_category: wallet_intelligence     # proposed
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - "RNWY Wallet (kid rnwy-wallet-v1)"
+    signed_payload_fields:
+      - "TBD — confirm with @rnwy on the operator-level wallet classification payload"
+    payload_fields_source: |
+      RNWY's wallet_intelligence envelope shape is referenced in
+      crosswalk/insumerapi.yaml notes (kid rnwy-wallet-v1, shipped
+      2026-04-10) but the per-claim field set is not in this repo.
+      Marking TBD rather than guessing.
+    notes: |
+      Behavioral classification of wallet activity (sybil signals,
+      volume patterns, sanctions proximity per vocabulary.yaml). The
+      RFC category should accommodate quantitative classification
+      outputs (sybil_severity, volume_class, etc.) without forcing
+      a single scoring scheme.
+    needs_issuer_confirmation: true
+
+  # ───── 4 ─────────────────────────────────────────
+  - signal_type: reasoning_integrity
+    target_category: reasoning_integrity     # proposed
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - ThoughtProof
+    signed_payload_fields:
+      - "TBD — confirm with ThoughtProof on the action-attestation payload"
+    payload_fields_source: |
+      ThoughtProof's signed envelope is wallet-agnostic by design (per
+      vocabulary.yaml: "Attestation surface = the action, not the
+      actor"). The exact claim set is not documented in this repo.
+      Marking TBD.
+    notes: |
+      Wallet-agnostic primitive. The RFC category should NOT require
+      a wallet field on this signal type — that would push every
+      reasoning attestation into needing an unrelated identity
+      anchor. The signed subject is the action artifact (e.g.,
+      reasoning trace, output hash), not the actor.
+    needs_issuer_confirmation: true
+
+  # ───── 5 ─────────────────────────────────────────
+  # NEEDS REVIEW: @AlexanderLawson17 — Revettr current envelope shape
+  # This row covers Revettr's PRESENT production envelope (compliance-
+  # only). The future Revettr wallet_state envelope is in row 1.
+  - signal_type: compliance_risk
+    target_category: compliance_risk         # proposed
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - "Revettr (current single-envelope shape)"
+    signed_payload_fields:
+      - "TBD — confirm with @AlexanderLawson17 on the current Revettr signed envelope claim set"
+    payload_fields_source: |
+      Revettr's current production envelope mixes compliance-risk
+      and on-chain state fields. The v0.2 split (separating
+      compliance_risk from a dedicated wallet_state envelope) is
+      proposed but not yet shipped. This row reflects what is in
+      production TODAY, not the future split.
+    notes: |
+      Per @douglasborthwick-crypto on vocabulary.yaml: distinct from
+      `compliance_credential`. Credential = holder possesses X. Risk
+      = scored exposure. The RFC should keep the two terms distinct;
+      collapsing them loses the directionality of the signal (risk
+      is something you have exposure to, not something you possess).
+      [REVIEW: @AlexanderLawson17 — please confirm the current
+      Revettr signed payload field set so this row stops saying TBD.]
+    needs_issuer_confirmation: true
+    revettr_split_status: "PROPOSED — pending v0.2 RFC formalization, not yet split in production. Current Revettr envelope still mixes compliance-risk + on-chain state fields."
+
+  # ───── 6 ─────────────────────────────────────────
+  - signal_type: passport_grade
+    target_category: passport_grade          # proposed
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - "APS / AEOESS (gateway.aeoess.com)"
+    signed_payload_fields:
+      - passport_grade                       # 0..3
+      - attestation_bundle_hash
+      - "issuer (e.g. https://gateway.aeoess.com)"
+      - issued_at
+      - expires_at
+    payload_fields_source: |
+      APS passport_grade is a composite trust grade (0–3) derived
+      from issuance evidence and surfaced through the gateway public
+      trust profile at /api/v1/public/trust/{agentId}/attestation
+      as an Ed25519-signed JWS. The five fields above are the
+      stable claim set in the public attestation envelope. A formal
+      APS crosswalk file (planned per README) will document this
+      end-to-end.
+    notes: |
+      Composite trust grade rather than a raw measurement. The RFC
+      category should treat passport_grade as a categorical
+      enumeration (the four grades) with attached evidence
+      references, not as a continuous score.
+    needs_issuer_confirmation: false
+
+  # ───── 7 ─────────────────────────────────────────
+  - signal_type: trust_verification
+    target_category: trust_verification      # proposed
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - "AgentID (haroldmalikfrimpong-ops)"
+      - "APS (per vocabulary.yaml — secondary issuer of trust_verification)"
+    signed_payload_fields:
+      - "TBD — confirm with @haroldmalikfrimpong-ops on AgentID's signed claim set"
+    payload_fields_source: |
+      AgentID's trust_verification envelope shape is not documented
+      in this repo as a crosswalk. APS issues a parallel
+      trust_verification signal via the gateway public trust
+      profile. The exact union of fields across the two issuers is
+      TBD pending the AgentID crosswalk PR.
+    notes: |
+      Identity-layer verification status (per vocabulary.yaml: Grade
+      1-3, KYC presence, principal endorsement). The RFC category
+      should distinguish trust_verification (identity layer) from
+      passport_grade (composite trust grade). They are adjacent
+      primitives, not the same primitive.
+    needs_issuer_confirmation: true
+
+  # ───── 8 ─────────────────────────────────────────
+  - signal_type: security_posture
+    target_category: security_posture        # proposed
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - "AgentGraph (kenneives)"
+    signed_payload_fields:
+      - "TBD — confirm with @kenneives on AgentGraph's signed claim set"
+    payload_fields_source: |
+      AgentGraph's security_posture envelope is wallet-discoverable
+      rather than wallet-bound: the signed subject is the artifact
+      (github:owner/repo, commit hash, output) and the wallet is a
+      lookup key into the artifact graph. Per vocabulary.yaml.
+      Field set is not documented in this repo; marking TBD.
+    notes: |
+      Wallet-discoverable. The RFC category should NOT require a
+      wallet field in signed scope — the artifact is the subject.
+      This is structurally similar to settlement_witness (row 10)
+      in that respect, and the RFC may choose to mark both as
+      "wallet-discoverable" rather than "wallet-bound" to preserve
+      that distinction.
+    needs_issuer_confirmation: true
+
+  # ───── 9 ─────────────────────────────────────────
+  - signal_type: job_performance
+    target_category: job_performance         # proposed
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - Maiat
+    signed_payload_fields:
+      - "TBD — confirm with Maiat on the wallet-bound job-completion claim set"
+    payload_fields_source: |
+      Per vocabulary.yaml: Maiat issues job_performance as a
+      wallet-bound assessment of completed task outcomes. Field set
+      is not documented in this repo; marking TBD.
+    notes: |
+      Wallet-bound (the wallet is in the signed subject). Distinct
+      from settlement_witness (row 10) in that job_performance is
+      an assessment summary across many actions, while
+      settlement_witness is bound to a specific completed action.
+      The RFC may want a hierarchical relationship: job_performance
+      AGGREGATES settlement_witness records.
+    needs_issuer_confirmation: true
+
+  # ───── 10 ─────────────────────────────────────────
+  - signal_type: settlement_witness
+    target_category: settlement_witness      # proposed
+    target_category_status: proposed
+    match: exact
+    issuers_in_production:
+      - "SAR (defaultverifier.com)"
+    signed_payload_fields:
+      - "TBD — confirm with SAR on the action-bound outcome attestation claim set"
+    payload_fields_source: |
+      Per crosswalk/insumerapi.yaml notes: SAR receipts are wallet-
+      bound under kid sar-prod-ed25519-03 (shipped 2026-04-10) and
+      wallet-discoverable under legacy kids -02 / -01. Field set is
+      not documented in this repo; marking TBD.
+    notes: |
+      Action-bound rather than agent-bound. The signed subject is
+      the completed action artifact, with the wallet appearing in
+      signed scope on new (kid -03) receipts and as a discoverable
+      lookup key on legacy receipts. The RFC category should
+      accommodate both binding modes during the migration period.
+    needs_issuer_confirmation: true
+
+# ─────────────────────────────────────────────────
+# OPEN QUESTIONS FOR THE A2A RFC AUTHORS
+# Surfacing these in the crosswalk file so they travel with the PR
+# and the discussion thread, rather than getting lost in review
+# comments.
+# ─────────────────────────────────────────────────
+open_questions:
+
+  - id: q1
+    question: |
+      Should the RFC category names mirror the vocabulary signal_type
+      names exactly, or should the RFC use its own taxonomy and
+      crosswalk to the vocabulary?
+    current_assumption: "This file assumes 1:1 name alignment (`match: exact` on every row). If the RFC chooses different names, every row's `target_category` flips and most match types may drop to `partial`."
+
+  - id: q2
+    question: |
+      Should the RFC distinguish wallet-bound signals from
+      wallet-discoverable signals as a structural property of each
+      category?
+    rationale: "Rows 8 (security_posture) and 10 (settlement_witness) are wallet-discoverable; rows 1, 9, and most of 7 are wallet-bound; row 4 (reasoning_integrity) is wallet-agnostic. A consumer that doesn't know which mode a category uses cannot write a correct verifier."
+
+  - id: q3
+    question: |
+      Where does the proposed Revettr split (compliance_risk +
+      wallet_state) land in the RFC migration timeline?
+    rationale: "Rows 1 and 5 both reference Revettr. Today Revettr emits a single mixed envelope; the v0.2 split is proposed but not shipped. The RFC categories will be more useful if they accommodate the migration window, not just the post-split state."
+    needs: "@AlexanderLawson17 confirmation on Revettr's split timeline"
+
+  - id: q4
+    question: |
+      Should job_performance (row 9) and settlement_witness (row 10)
+      be hierarchically related in the RFC?
+    rationale: "job_performance is an aggregate assessment across many actions; settlement_witness is bound to a single completed action. A hierarchical relationship would let consumers ask 'which settlement_witness records back this job_performance score?' without separate orchestration."
+
+# ─────────────────────────────────────────────────
+# ROWS NEEDING ISSUER REVIEW BEFORE MERGE
+# Repeated here for the PR description so the right people get
+# tagged. Ten rows total; eight currently need confirmation.
+# ─────────────────────────────────────────────────
+review_required:
+  wallet_state:               ["@douglasborthwick-crypto", "@AlexanderLawson17"]
+  behavioral_trust:           ["TBD — SATP, MolTrust, RNWY maintainers"]
+  wallet_intelligence:        ["RNWY maintainer"]
+  reasoning_integrity:        ["ThoughtProof maintainer"]
+  compliance_risk:            ["@AlexanderLawson17"]
+  passport_grade:             []   # APS, internal — no external review needed
+  trust_verification:         ["@haroldmalikfrimpong-ops"]
+  security_posture:           ["@kenneives"]
+  job_performance:            ["Maiat maintainer"]
+  settlement_witness:         ["SAR / defaultverifier.com maintainer"]
+
+# ─────────────────────────────────────────────────
+# CROSSWALK METADATA
+# ─────────────────────────────────────────────────
+crosswalk_metadata:
+  authored_by: "@aeoess (drafted on @douglasborthwick-crypto's behalf per A2A#1734)"
+  vocabulary_version: "0.1.0"
+  drafted: "2026-04-10"
+  status: "draft — awaiting RFC v0.2 formalization and per-issuer field-set confirmation"
+  next_revisions:
+    - "Replace TBD signed_payload_fields with confirmed claim sets after each tagged issuer reviews their row."
+    - "Re-mark Revettr rows once the v0.2 split actually ships (currently PROPOSED)."
+    - "Re-evaluate match types if the A2A RFC chooses non-mirror category names (open question q1)."
+    - "Add the wallet-binding-mode descriptor (open question q2) if the RFC adopts it."

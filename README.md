@@ -31,8 +31,16 @@ Open a PR adding `crosswalk/<your-system>.yaml`. Use the match types from `vocab
 Committed contributors so far:
 
 - `crosswalk/insumerapi.yaml` - @douglasborthwick-crypto
+- `crosswalk/satp/behavioral-trust.yaml` - SATP / @aeoess
 - `crosswalk/moltrust.yaml` - @MoltyCel
 - `crosswalk/aps.yaml` - @aeoess (this week)
+- `crosswalk/rfc-category-taxonomy.yaml` - reverse crosswalk mapping
+  the ten MULTI-ATTESTATION-SPEC signal_types to the (proposed) A2A
+  RFC trust evidence category taxonomy. Drafted on
+  @douglasborthwick-crypto's offer per A2A Discussion #1734
+  ([@AlexanderLawson17](https://github.com/AlexanderLawson17)). Eight
+  of ten rows currently need per-issuer field-set confirmation; see
+  the file's `review_required` block for the tag list.
 
 ## License
 

@@ -69,7 +69,12 @@ descriptor_dimensions:
 
   validity_temporal:
     question: "When is validity established and when must it still hold?"
-    values: ["at_issuance", "at_acceptance", "at_processing", "continuously"]
+    values: ["at_issuance", "at_acceptance", "at_processing", "continuously", "sequence", "windowed"]
+    notes: |
+      `sequence` and `windowed` were added to support the decision_trajectory
+      section (per @nanookclaw, PDR Section 8). `sequence` denotes longitudinal
+      ordered records (e.g. decision_lineage); `windowed` denotes signals
+      collected over an explicitly declared observation_window.
 
   refusal_authority:
     question: "Where does actual refusal authority live?"
@@ -102,6 +107,90 @@ crosswalk_match_types:
     definition: "Looks similar lexically but governance semantics differ. MUST be explicit."
   no_mapping:
     definition: "No analog in target system. Honest gap."
+
+# ─────────────────────────────────────────────────
+# DECISION TRAJECTORY (per @nanookclaw, contributed from PDR Section 8)
+# Longitudinal primitives. These describe how decisions evolve over time
+# rather than the verdict at any single moment. Different class of
+# primitive than the point-in-time signal_types above: those answer
+# "what is the verdict now?", these answer "how is the verdict moving?"
+#
+# Long-form rationale: docs/decision-trajectory.md
+# Discussion: aeoess/agent-passport-system#13
+# ─────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    type: signal_type
+    scheme: content_addressable_implementation_specific
+    description: |
+      Ordered content-addressable sequence of decisions affecting a single
+      agent. Not the latest decision — the sequence. Each entry references
+      its predecessor by content hash so the lineage can be replayed and
+      verified end to end.
+    descriptor_dimensions:
+      enforcement_class: binding
+      validity_temporal: sequence
+    issuers_in_production: ["PDR"]
+    notes: |
+      v0.1 deliberately leaves the addressing scheme implementation-specific.
+      May tighten in v0.2 if cross-system validation surfaces a need for a
+      shared canonical hash format. See docs/decision-trajectory.md.
+
+  baseline_revision:
+    type: annotation
+    description: |
+      Version identifier for the behavioral baseline the decision was
+      evaluated against. Required so that two identical verdicts at
+      different times are not silently semantically different — a `permit`
+      against baseline v3 and a `permit` against baseline v4 can mean
+      different things if the baseline tightened between the two.
+    required_on:
+      - behavioral_trust
+      - divergence_signal
+      - decision_lineage
+
+  divergence_signal:
+    type: signal_type
+    kind: quantitative_measurement
+    description: |
+      Quantitative behavioral deviation from a declared baseline_revision,
+      as a first-class measurement distinct from any gate verdict it may
+      trigger. The measurement and the gate are separable concerns: the
+      same divergence value may permit on one consumer's policy and deny
+      on another's.
+    descriptor_dimensions:
+      enforcement_class: advisory
+      validity_temporal: windowed
+    issuers_in_production: ["PDR"]
+
+  trust_velocity:
+    type: derived_signal
+    description: |
+      Rate of change in trust_score over a declared observation_window.
+      Derivative, not snapshot. A high absolute trust_score with a steeply
+      negative trust_velocity is a different governance situation than
+      the same score with a positive velocity, and consumers should be
+      able to express that distinction without recomputing it from raw
+      history.
+    requires:
+      - observation_window
+    issuers_in_production: ["PDR"]
+
+# ─────────────────────────────────────────────────
+# CONSTRAINTS
+# Parameters that consumers and issuers must declare explicitly when
+# producing certain signal types. Not signals themselves — required
+# context that turns ambiguous signals into reproducible measurements.
+# ─────────────────────────────────────────────────
+constraints:
+  observation_window:
+    type: temporal_parameter
+    description: |
+      Temporal scope over which behavioral signals are collected. Must be
+      declared explicitly by any consumer or issuer producing windowed
+      signals (trust_velocity, divergence_signal). Without an explicit
+      window declaration, two issuers reporting the same divergence value
+      are not actually saying the same thing.
 
 # ─────────────────────────────────────────────────
 # OUT OF SCOPE FOR v0.1

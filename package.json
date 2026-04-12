@@ -1,0 +1,28 @@
+{
+  "name": "agent-governance-vocabulary",
+  "version": "1.0.0",
+  "description": "Canonical names for governance primitives across multi-issuer agent ecosystems.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "validate": "node scripts/validate-crosswalks.js",
+    "test": "node scripts/validate-crosswalks.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aeoess/agent-governance-vocabulary.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/aeoess/agent-governance-vocabulary/issues"
+  },
+  "homepage": "https://github.com/aeoess/agent-governance-vocabulary#readme",
+  "devDependencies": {
+    "js-yaml": "^4.1.1"
+  }
+}

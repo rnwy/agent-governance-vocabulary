@@ -1,4 +1,7 @@
-system: AgentNexus
+system:
+  name: AgentNexus
+  repo: https://github.com/kevinkaylie/AgentNexus
+license: Apache-2.0
 version: "0.9.6"
 spec: https://github.com/kevinkaylie/AgentNexus
 did_method: "did:agentnexus"
@@ -98,27 +101,30 @@ signal_types:
     source: "agent_net/common/governance.py#GovernanceAttestation"
     notes: "Direct mapping. Issued by MolTrust or APS, verified via JWKS"
 
-  identity_proof:
-    internal: "DID Document (verificationMethod array)"
-    source: "GET /resolve/{did} response"
-    notes: "W3C DID Core compliant. Ed25519 public key in verificationMethod[0].publicKeyMultibase (z-prefixed multicodec)"
-
-  behavioral_fingerprint:
-    no_mapping: true
-    rationale: "behavior_delta is computed internally from interaction history (success rate, response time, frequency) but is not signed or exported as a standalone artifact. Not independently verifiable."
-
   wallet_state:
     no_mapping: true
     rationale: "No wallet concept. See wallet_binding above."
 
+# Non-canonical terms referenced by earlier drafts of this crosswalk.
+# Retained as documentation: each explains why a similarly-named term
+# is NOT canonical in vocabulary.yaml. Outside signal_types so the
+# validator does not flag them as unknown canonicals.
+non_canonical_term_references:
+  behavioral_fingerprint:
+    no_mapping: true
+    rationale: "Superseded by canonical `behavioral_trust`. Per @douglasborthwick-crypto in issue #1: fingerprint implies passive observation; trust implies scored assessment. Distinct primitives, vocabulary kept `behavioral_trust` only."
+
   compliance_credential:
     no_mapping: true
-    rationale: "Planned for v1.5 enterprise roadmap as pluggable audit layer (EU AI Act Article 12). Not yet implemented. Will be modeled as optional adapter, not core."
+    rationale: "Distinct from canonical `compliance_risk` per @douglasborthwick-crypto's framing in issue #1. Credential = holder possesses X; risk = scored exposure. Vocabulary kept `compliance_risk` only."
+
+  identity_proof:
+    no_mapping: true
+    rationale: "Per @douglasborthwick-crypto in issue #20: identity_proof maps to W3C DID Document raw key material (verificationMethod array, Ed25519 multicodec); canonical `trust_verification` is the graded verdict layer (KYC presence, principal endorsement). Different layers — collapsing them would erase the same distinction kept for behavioral_trust vs behavioral_fingerprint and compliance_risk vs compliance_credential. Single-issuer term, does not meet 2+ implementation threshold for canonicalization. If a second issuer surfaces a similar primitive, the right canonical name would describe it directly (e.g. `did_verification_method`), not collapse into `trust_verification`."
 
   reputation_score:
-    internal: "ReputationScore (trust_score, base_score, behavior_delta, attestation_bonus)"
-    source: "agent_net/common/reputation.py#ReputationScore"
-    notes: "Exported in OATR extensions.agent-trust format. Not yet signed as standalone artifact — computed on-demand, not issued"
+    no_mapping: true
+    rationale: "Deliberately scoped out. Aggregating reputation inside the vocabulary leaks consumer policy into the naming layer. Consumers compute reputation from the canonical signal types."
 
 decisions:
   permit:

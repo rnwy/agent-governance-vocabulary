@@ -96,16 +96,16 @@ signal_types:
       The W3C VC IS the attestation — not a wrapper around a separate
       payload format.
 
-      entity_continuity:
+  entity_continuity:
     status: proposed
-    proposed_by: ["RNWY / SBR Protocol (crosswalk/soulboundrobots.yaml)"]
+    proposed_by: ["SBR Protocol (crosswalk/soulboundrobots.yaml)"]
     definition: >
       Cryptographic proof that the same agent identity (wallet) persisted
       across a body swap or infrastructure migration. Answers: is this still
       the same agent? Distinct from behavioral_trust (earned reputation) and
       consent_provenance (authorization chain) — entity_continuity establishes
       identity persistence as the prior condition for both.
-    issuers_in_production: ["RNWY / SBR Protocol"]
+    issuers_in_production: ["SBR Protocol"]
     notes: |
       ES256 / P-256 signed JWT. JWKS at soulboundrobots.ai/.well-known/jwks.json.
       On-chain registration via EAS on Base.

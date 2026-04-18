@@ -1,0 +1,71 @@
+# crosswalk/a2a.yaml
+# RNWY signal mapping for A2A Agent Card governance metadata.
+# Per a2aproject/A2A#1717, three-layer composition:
+#   1. Declared metadata on the Agent Card
+#   2. Signed evidence via trust.signals[] (Borthwick multi-attestation stack)
+#   3. Canonical naming via this vocabulary
+
+issuer: "did:web:rnwy.com"
+
+signals:
+  peer_review:
+    a2a_field: trust.signals[].provider.category
+    a2a_canonical_value: "peer_review"
+    reference_point: "reviewer_credibility"  # per merged scope note on #29
+    signing_identity: "did:web:rnwy.com"
+    jwks_uri: "https://rnwy.com/.well-known/jwks.json"
+    kid: "rnwy-trust-v2"
+    description: >
+      Reviewer credibility analysis is bundled within RNWY's behavioral_trust
+      attestation envelope. Consumers extract peer_review evidence from the
+      signed payload fields: sybilSignals, sybilSeverity, and badges.
+      peer_review and behavioral_trust share the rnwy-trust-v2 signing kid;
+      one attestation, two canonical signals distinguished by reference_point.
+
+  behavioral_trust:
+    a2a_field: trust.signals[].provider.category
+    a2a_canonical_value: "behavioral_trust"
+    signing_identity: "did:web:rnwy.com"
+    jwks_uri: "https://rnwy.com/.well-known/jwks.json"
+    kid: "rnwy-trust-v2"
+    description: >
+      Composite trust score synthesizing wallet age, original-owner status,
+      feedback volume, sybil detection, and coordination analysis. Signed
+      payload fields: agentId, chain, registry, owner, score, tier, badges,
+      sybilSeverity, sybilSignals, issuedAt, verifiedAt, expiry.
+
+  wallet_intelligence:
+    a2a_field: trust.signals[].provider.category
+    a2a_canonical_value: "wallet_intelligence"
+    signing_identity: "did:web:rnwy.com"
+    jwks_uri: "https://rnwy.com/.well-known/jwks.json"
+    kid: "rnwy-wallet-v1"
+    description: >
+      Wallet-level intelligence covering Signal Depth (activity history) and
+      Risk Intensity along a quadrant model. Separate attestation from
+      behavioral_trust; signed under rnwy-wallet-v1. Signed payload fields:
+      iss, sub, wallet, signalDepth, riskIntensity, quadrant, activityZone,
+      riskZone, issuedAt, verifiedAt, expiry.
+
+fetch:
+  auth: "none"
+  endpoints:
+    - signals: ["peer_review", "behavioral_trust"]
+      url: "https://rnwy.com/api/trust-check?wallet={wallet_address}"
+      response_shape: "signed-json-envelope"
+      notes: >
+        Single endpoint returns one attestation (type: behavioral_trust)
+        carrying evidence for both canonical signals. Chain auto-resolves
+        server-side from the highest-scoring agent owned by the wallet.
+    - signals: ["wallet_intelligence"]
+      url: "https://rnwy.com/api/wallet-score?address={wallet_address}"
+      response_shape: "signed-json-envelope"
+  response_envelope:
+    issuer: "did:web:rnwy.com"
+    type: "canonical signal category name (e.g. behavioral_trust, wallet_intelligence)"
+    kid: "matches signals[].kid"
+    alg: "ES256"
+    jwks: "https://rnwy.com/.well-known/jwks.json"
+    signed: "object containing the attested payload; fields vary by attestation type"
+    sig: "base64 signature over the signed payload"
+    expiry: "ISO 8601 timestamp"
